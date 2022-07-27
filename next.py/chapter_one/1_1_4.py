@@ -2,7 +2,7 @@ from functools import reduce
 
 
 def sum_of_digits(number):
-    return reduce(lambda total, n: total + int(n), list(str(number)), 0)
+    return reduce(lambda total, n: total + int(n), str(number), 0)
 
 
 print(sum_of_digits(104))
