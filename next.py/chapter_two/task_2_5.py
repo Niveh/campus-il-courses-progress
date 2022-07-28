@@ -18,8 +18,8 @@ class Animal:
     def feed(self):
         self._hunger -= 1
 
-    def talk(self, phrase="I cannot talk yet!"):
-        print(phrase)
+    def talk(self):
+        pass
 
 
 class Dog(Animal):
@@ -32,7 +32,7 @@ class Dog(Animal):
         super().__init__(name, hunger)
 
     def talk(self):
-        super().talk("woof woof")
+        print("woof woof")
 
     def fetch_stick(self):
         print("There you go, sir!")
@@ -48,7 +48,7 @@ class Cat(Animal):
         super().__init__(name, hunger)
 
     def talk(self):
-        super().talk("meow")
+        print("meow")
 
     def chase_laser(self):
         print("Meeeeow")
@@ -65,7 +65,7 @@ class Skunk(Animal):
         self._stink_count = stink_count
 
     def talk(self):
-        super().talk("tsssss")
+        print("tsssss")
 
     def stink(self):
         print("Dear lord!")
@@ -81,7 +81,7 @@ class Unicorn(Animal):
         super().__init__(name, hunger)
 
     def talk(self):
-        super().talk("Good day, darling")
+        print("Good day, darling")
 
     def sing(self):
         print("I'm not your toy...")
@@ -98,7 +98,7 @@ class Dragon(Animal):
         self._color = color
 
     def talk(self):
-        super().talk("Raaaawr")
+        print("Raaaawr")
 
     def breath_fire(self):
         print("$@#$#@$")
