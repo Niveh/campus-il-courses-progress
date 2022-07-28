@@ -1,5 +1,8 @@
 
 class BankAccount:
+    """
+    A class used to represent a Bank Account
+    """
     bank_name = "PayPy"
 
     def __init__(self, balance=0) -> None:

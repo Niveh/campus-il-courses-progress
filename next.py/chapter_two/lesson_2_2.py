@@ -1,5 +1,9 @@
 
 class BankAccount:
+    """
+    A class used to represent a Bank Account
+    """
+
     def __init__(self) -> None:
         self.balance = 0
 

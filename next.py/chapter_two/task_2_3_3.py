@@ -3,6 +3,10 @@ count_animals = 0
 
 
 class Octopus:
+    """
+    A class used to represent an Octopus.
+    """
+
     def __init__(self, name="Octavio", age=0) -> None:
         self._name = name
         self._age = age

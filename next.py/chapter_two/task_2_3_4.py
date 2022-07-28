@@ -1,5 +1,8 @@
 
 class Pixel:
+    """
+    A class used to represent a Pixel.
+    """
     COLORS_INDEX = {
         0: "Red",
         1: "Green",
@@ -18,9 +21,15 @@ class Pixel:
         self._colors = (avg, avg, avg)
 
     def print_pixel_info(self):
+        """
+        Prints a pixel's info, showing the coordinates and (R,G,B) color.
+        Also prints the dominant color if such exists.
+        A color is dominant if its value is above 50 and the rest are zero.
+        """
         color = ""
         if len(list(filter(lambda x: x == 0, self._colors))) == 2:
-            color = self.COLORS_INDEX[self._colors.index(sum(self._colors))]
+            color = self.COLORS_INDEX[self._colors.index(
+                sum(self._colors))] if sum(self._colors) > 50 else ""
 
         print(
             f"X: {self._coords[0]}, Y: {self._coords[1]}, Color: {self._colors}{f' {color}' if bool(color) else ''}")

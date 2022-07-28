@@ -1,5 +1,9 @@
 
 class Animal:
+    """
+    A class used to represent an Animal
+    """
+
     def __init__(self, name):
         self._name = name
         self._hunger = 0
@@ -17,6 +21,10 @@ class Animal:
 
 
 class Dog(Animal):
+    """
+    A class used to represent an Dog. Inherits from Animal.
+    """
+
     def __init__(self, name, fur_color):
         super().__init__(name)
         self._fur_color = fur_color

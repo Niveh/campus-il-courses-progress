@@ -1,5 +1,8 @@
 
 class Animal:
+    """
+    A class used to represent an Animal.
+    """
     zoo_name = "Hayaton"
 
     def __init__(self, name, hunger=0) -> None:
@@ -15,11 +18,16 @@ class Animal:
     def feed(self):
         self._hunger -= 1
 
-    def talk(self, phrase):
+    def talk(self, phrase="I cannot talk yet!"):
         print(phrase)
 
 
 class Dog(Animal):
+    """
+    A class used to represent a Dog, inherited from Animal.
+    Has a special method called fetch_stick.
+    """
+
     def __init__(self, name, hunger=0) -> None:
         super().__init__(name, hunger)
 
@@ -31,6 +39,11 @@ class Dog(Animal):
 
 
 class Cat(Animal):
+    """
+    A class used to represent a Cat, inherited from Animal.
+    Has a special method called chase_laser.
+    """
+
     def __init__(self, name, hunger=0) -> None:
         super().__init__(name, hunger)
 
@@ -42,6 +55,11 @@ class Cat(Animal):
 
 
 class Skunk(Animal):
+    """
+    A class used to represent a Skunk, inherited from Animal.
+    Has a special method called stink.
+    """
+
     def __init__(self, name, hunger=0, stink_count=6) -> None:
         super().__init__(name, hunger)
         self._stink_count = stink_count
@@ -54,6 +72,11 @@ class Skunk(Animal):
 
 
 class Unicorn(Animal):
+    """
+    A class used to represent a Unicorn, inherited from Animal.
+    Has a special method called sing.
+    """
+
     def __init__(self, name, hunger=0) -> None:
         super().__init__(name, hunger)
 
@@ -65,6 +88,11 @@ class Unicorn(Animal):
 
 
 class Dragon(Animal):
+    """
+    A class used to represent a Dragon, inherited from Animal.
+    Has a special method called breath_fire.
+    """
+
     def __init__(self, name, hunger=0, color="Green") -> None:
         super().__init__(name, hunger)
         self._color = color
