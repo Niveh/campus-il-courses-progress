@@ -33,4 +33,5 @@ def main():
     print(f"count_animals: {count_animals}")
 
 
-main()
+if __name__ == "__main__":
+    main()

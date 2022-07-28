@@ -22,4 +22,5 @@ def main():
     print(second_account.bank_name)
 
 
-main()
+if __name__ == "__main__":
+    main()

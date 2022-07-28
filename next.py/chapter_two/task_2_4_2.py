@@ -32,4 +32,5 @@ def main():
     print(cutie.size())
 
 
-main()
+if __name__ == "__main__":
+    main()

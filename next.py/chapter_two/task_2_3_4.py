@@ -33,4 +33,5 @@ def main():
     p.print_pixel_info()
 
 
-main()
+if __name__ == "__main__":
+    main()

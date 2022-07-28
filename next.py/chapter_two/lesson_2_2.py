@@ -27,4 +27,5 @@ def main():
     customer1.func()
 
 
-main()
+if __name__ == "__main__":
+    main()

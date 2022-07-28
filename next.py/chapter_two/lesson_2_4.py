@@ -39,4 +39,5 @@ def main():
     my_dog.eat()
 
 
-main()
+if __name__ == "__main__":
+    main()

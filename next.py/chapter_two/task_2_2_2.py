@@ -21,4 +21,5 @@ def main():
     print(octopus_two.get_age())
 
 
-main()
+if __name__ == "__main__":
+    main()
