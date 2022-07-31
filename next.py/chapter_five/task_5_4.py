@@ -64,6 +64,10 @@ class IDIterator:
         if self._ids_count_max != -1:
             self._ids_count += 1
 
+        # Handle edge case
+        if self._id >= 999999999:
+            raise StopIteration()
+
         # Return the most recent valid ID.
         return self._id
 
