@@ -27,7 +27,7 @@ def recv_message_and_parse(conn):
     Returns: cmd (str) and data (str) of the received message. 
     If error occured, will return None, None
     """
-    full_msg = conn.recv(1024).decode()
+    full_msg = conn.recv(chatlib.MAX_DATA_LENGTH).decode()
     cmd, data = chatlib.parse_message(full_msg)
     return cmd, data
 
@@ -129,11 +129,14 @@ def login(conn):
         build_and_send_message(
             conn, chatlib.PROTOCOL_CLIENT["login_msg"], f"{username}#{password}")
 
-        logged_in = recv_message_and_parse(
-            conn)[0] == chatlib.PROTOCOL_SERVER["login_ok_msg"]
+        login_cmd, login_msg = recv_message_and_parse(
+            conn)
+
+        logged_in = login_cmd == chatlib.PROTOCOL_SERVER["login_ok_msg"]
 
         if not logged_in:
-            print("Login failed! Please try again.")
+            if login_cmd == chatlib.PROTOCOL_SERVER["error_msg"]:
+                print(login_msg)
 
     print("Successfully logged in!")
 
