@@ -103,7 +103,27 @@ def send_error(conn, error_msg):
 
 def handle_getscore_message(conn, username):
     global users
-    # Implement this in later chapters
+    score = str(users[username]["score"])
+    build_and_send_message(
+        conn, chatlib.PROTOCOL_SERVER["score_msg"], score)
+
+
+def handle_highscore_message(conn):
+    global users
+
+    score_table = [f"{user}: {users[user]['score']}" for user in users]
+    scoreboard = "\n".join(
+        sorted(score_table, key=lambda x: int(x.split(" ")[1]), reverse=True))
+
+    build_and_send_message(
+        conn, chatlib.PROTOCOL_SERVER["highscore_msg"], scoreboard)
+
+
+def handle_logged_message(conn):
+    global logged_users
+    user_list = ", ".join([logged_users[user] for user in logged_users])
+    build_and_send_message(
+        conn, chatlib.PROTOCOL_SERVER["logged_users_msg"], f"Online users: {user_list}")
 
 
 def handle_logout_message(conn):
@@ -113,6 +133,7 @@ def handle_logout_message(conn):
     Returns: None
     """
     global logged_users
+    logged_users.pop(conn.getpeername(), None)
     conn.close()
 
 
@@ -131,6 +152,7 @@ def handle_login_message(conn, data):
         if users[username]["password"] == password:
             build_and_send_message(
                 conn, chatlib.PROTOCOL_SERVER["login_ok_msg"], "")
+            logged_users[conn.getpeername()] = username
         else:
             send_error(conn, "Incorrect password!")
     else:
@@ -147,8 +169,17 @@ def handle_client_message(conn, cmd, data):
 
     if cmd == chatlib.PROTOCOL_CLIENT["login_msg"]:
         handle_login_message(conn, data)
+    elif conn.getpeername() not in logged_users:
+        return
+
     elif cmd == chatlib.PROTOCOL_CLIENT["logout_msg"]:
         handle_logout_message(conn)
+    elif cmd == chatlib.PROTOCOL_CLIENT["score_msg"]:
+        handle_getscore_message(conn, logged_users[conn.getpeername()])
+    elif cmd == chatlib.PROTOCOL_CLIENT["highscore_msg"]:
+        handle_highscore_message(conn)
+    elif cmd == chatlib.PROTOCOL_CLIENT["logged_users_msg"]:
+        handle_logged_message(conn)
     else:
         send_error(conn, "Unknown command")
 
@@ -176,7 +207,8 @@ def main():
                     raise Exception
 
                 handle_client_message(conn, cmd, data)
-        except:
+        except Exception as e:
+            # print(e)
             print(f"Lost connection with {addr}")
 
         else:

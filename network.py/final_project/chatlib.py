@@ -68,7 +68,7 @@ def parse_message(data):
         return ERROR_RETURN, ERROR_RETURN
 
     msg_len = int(data[1])
-    if msg_len != len(data[2]):
+    if msg_len != len(str(data[2])):
         return ERROR_RETURN, ERROR_RETURN
 
     return data[0].replace(" ", ""), data[2]

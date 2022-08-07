@@ -42,7 +42,6 @@ def build_send_recv_parse(conn, cmd, data):
 def get_score(conn):
     msg_code, data = build_send_recv_parse(
         conn, chatlib.PROTOCOL_CLIENT["score_msg"], "")
-
     if msg_code == chatlib.PROTOCOL_SERVER["score_msg"]:
         print(f"Your score is {data}")
 
