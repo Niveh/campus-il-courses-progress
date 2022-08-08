@@ -4,6 +4,7 @@
 
 import socket
 import chatlib
+import random
 
 # GLOBALS
 users = {}
@@ -52,7 +53,7 @@ def load_questions():
     Returns: questions dictionary
     """
     questions = {
-        2313: {"question": "How much is 2+2", "answers": ["3", "4", "2", "1"], "correct": 2},
+        2313: {"question": "How much is 2+2?", "answers": ["3", "4", "2", "1"], "correct": 2},
         4122: {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpellier"], "correct": 3}
     }
 
@@ -98,7 +99,34 @@ def send_error(conn, error_msg):
         conn, chatlib.PROTOCOL_SERVER["error_msg"], error_msg)
 
 
+def create_random_question():
+    global questions
+    question_id = random.choice([qid for qid in questions.keys()])
+    question = questions[question_id]["question"]
+    answers = questions[question_id]["answers"]
+
+    return f"{question_id}#{question}#{'#'.join(answers)}"
+
 # MESSAGE HANDLING
+
+
+def handle_question_message(conn):
+    question = create_random_question()
+    build_and_send_message(
+        conn, chatlib.PROTOCOL_SERVER["question_msg"], question)
+
+
+def handle_answer_message(conn, username, data):
+    question_id, answer = data.split("#")
+    correct = questions[int(question_id)]["correct"]
+
+    if int(answer) == correct:
+        users[username]["score"] += 5
+        build_and_send_message(
+            conn, chatlib.PROTOCOL_SERVER["correct_answer_msg"], "")
+    else:
+        build_and_send_message(
+            conn, chatlib.PROTOCOL_SERVER["wrong_answer_msg"], str(correct))
 
 
 def handle_getscore_message(conn, username):
@@ -180,6 +208,10 @@ def handle_client_message(conn, cmd, data):
         handle_highscore_message(conn)
     elif cmd == chatlib.PROTOCOL_CLIENT["logged_users_msg"]:
         handle_logged_message(conn)
+    elif cmd == chatlib.PROTOCOL_CLIENT["question_msg"]:
+        handle_question_message(conn)
+    elif cmd == chatlib.PROTOCOL_CLIENT["answer_msg"]:
+        handle_answer_message(conn, logged_users[conn.getpeername()], data)
     else:
         send_error(conn, "Unknown command")
 
@@ -192,6 +224,7 @@ def main():
     print("Welcome to Trivia Server!")
     users = load_user_database()
     questions = load_questions()
+
     s = setup_socket()
 
     while True:
@@ -208,7 +241,7 @@ def main():
 
                 handle_client_message(conn, cmd, data)
         except Exception as e:
-            # print(e)
+            print(e)
             print(f"Lost connection with {addr}")
 
         else:
