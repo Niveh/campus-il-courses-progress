@@ -43,6 +43,12 @@ PROTOCOL_SERVER = {
 ERROR_RETURN = None  # What is returned in case of an error
 
 
+class LogoutException(Exception):
+    def __init__(self, username) -> None:
+        self._message = f"{username} logged out."
+        super().__init__(self._message)
+
+
 def build_message(cmd, data):
     """
     Gets command name (str) and data field (str) and creates a valid protocol message

@@ -2,18 +2,21 @@
 # server.py
 ##############################################################################
 
+from calendar import c
 import socket
 import chatlib
 import random
+import select
 
 # GLOBALS
 users = {}
 questions = {}
-logged_users = {}  # a dictionary of client hostnames to usernames - will be used later
+logged_users = {}
+messages_to_send = []
 
 ERROR_MSG = "Error! "
 SERVER_PORT = 5678
-SERVER_IP = "127.0.0.1"
+SERVER_IP = "0.0.0.0"
 
 
 # HELPER SOCKET METHODS
@@ -27,7 +30,8 @@ def build_and_send_message(conn, code, data):
     """
     msg = chatlib.build_message(code, data)
     print("[SERVER]", msg)
-    conn.send(msg.encode())
+    global messages_to_send
+    messages_to_send.append((conn, msg))
 
 
 def recv_message_and_parse(conn):
@@ -42,6 +46,11 @@ def recv_message_and_parse(conn):
     cmd, data = chatlib.parse_message(full_msg)
     print("[CLIENT]", full_msg)
     return cmd, data
+
+
+def print_client_sockets(client_sockets):
+    for c in client_sockets:
+        print(c.getpeername())
 
 
 # Data Loaders #
@@ -161,8 +170,10 @@ def handle_logout_message(conn):
     Returns: None
     """
     global logged_users
+    username = logged_users[conn.getpeername()]
     logged_users.pop(conn.getpeername(), None)
     conn.close()
+    raise chatlib.LogoutException(username)
 
 
 def handle_login_message(conn, data):
@@ -219,33 +230,54 @@ def handle_client_message(conn, cmd, data):
 def main():
     # Initializes global users and questions dicionaries using load functions, will be used later
     global users
+    global logged_users
     global questions
+    global messages_to_send
 
     print("Welcome to Trivia Server!")
     users = load_user_database()
     questions = load_questions()
 
     s = setup_socket()
+    print("Listening for clients...")
+    client_sockets = []
 
     while True:
-        print("Waiting for new connection...")
-        conn, addr = s.accept()
-        print(f"Incoming connection: {addr}")
-        try:
-            while conn.fileno() != -1:
-                cmd, data = recv_message_and_parse(conn)
+        ready_to_read, ready_to_write, in_error = select.select(
+            [s] + client_sockets, client_sockets, [])
 
-                if (cmd, data) == (None, None):
-                    conn.close()
-                    raise Exception
+        for current_socket in ready_to_read:
+            if current_socket is s:
+                conn, addr = current_socket.accept()
+                print(f"Incoming connection: {addr}")
+                client_sockets.append(conn)
+                # print_client_sockets(client_sockets)
+            else:
+                try:
+                    cmd, data = recv_message_and_parse(current_socket)
+                    if (cmd, data) == (None, None):
+                        raise Exception
 
-                handle_client_message(conn, cmd, data)
-        except Exception as e:
-            print(e)
-            print(f"Lost connection with {addr}")
+                    handle_client_message(current_socket, cmd, data)
 
-        else:
-            print(f"Client logged out from {addr}")
+                except chatlib.LogoutException as e:
+                    print(e)
+                    client_sockets.remove(current_socket)
+
+                except Exception as e:
+                    print(e)
+                    addr = current_socket.getpeername()
+                    print(
+                        f"Lost connection with {addr}")
+                    logged_users.pop(addr, None)
+                    client_sockets.remove(current_socket)
+                    current_socket.close()
+
+        for message in messages_to_send:
+            current_socket, data = message
+            if current_socket in ready_to_write:
+                current_socket.send(data.encode())
+                messages_to_send.remove(message)
 
 
 if __name__ == '__main__':
