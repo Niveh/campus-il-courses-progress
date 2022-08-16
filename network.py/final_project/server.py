@@ -254,7 +254,7 @@ def handle_login_message(conn, data):
     global logged_users
 
     username, password = data.split("#")
-    if username in logged_users:
+    if username in list(logged_users.values()):
         build_and_send_message(
             conn, chatlib.PROTOCOL_SERVER["error_msg"], "You are already logged in!")
         return
