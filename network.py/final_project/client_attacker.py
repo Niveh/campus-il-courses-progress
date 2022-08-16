@@ -69,6 +69,8 @@ def check_answer(conn, qid, answer):
 
     elif msg_code == chatlib.PROTOCOL_SERVER["wrong_answer_msg"]:
         print(f"Nope, the correct answer is #{data}")
+        build_send_recv_parse(
+            conn, chatlib.PROTOCOL_CLIENT["answer_msg"], f"{qid}#{data}")
 
     elif msg_code == chatlib.PROTOCOL_SERVER["error_msg"]:
         print("A connection error occured.")
@@ -79,7 +81,6 @@ def check_answer(conn, qid, answer):
 
 def parse_question(q):
     q = q.split("#")
-    q = list(map(lambda x: x.replace("__HASH__", "#"), q))
     question = Question(q[0], q[1], q[2:])
     return question
 
@@ -132,10 +133,11 @@ def login(conn):
         login_cmd, login_msg = recv_message_and_parse(
             conn)
 
-        if login_cmd == chatlib.PROTOCOL_SERVER["error_msg"]:
-            print(login_msg)
-        elif login_cmd == chatlib.PROTOCOL_SERVER["login_ok_msg"]:
-            logged_in = True
+        logged_in = login_cmd == chatlib.PROTOCOL_SERVER["login_ok_msg"]
+
+        if not logged_in:
+            if login_cmd == chatlib.PROTOCOL_SERVER["error_msg"]:
+                print(login_msg)
 
     print("Successfully logged in!")
 

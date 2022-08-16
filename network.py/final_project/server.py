@@ -5,18 +5,25 @@
 import socket
 import chatlib
 import random
+import json
+import requests
+import html
 
 # GLOBALS
 users = {}
 questions = {}
-logged_users = {}  # a dictionary of client hostnames to usernames - will be used later
+logged_users = {}
+waiting_for_answer = {}
 
 ERROR_MSG = "Error! "
 SERVER_PORT = 5678
 SERVER_IP = "127.0.0.1"
 
+USERS_FILE = "users.txt"
+QUESTIONS_FILE = "questions.txt"
 
 # HELPER SOCKET METHODS
+
 
 def build_and_send_message(conn, code, data):
     """
@@ -45,33 +52,60 @@ def recv_message_and_parse(conn):
 
 
 # Data Loaders #
+def fix_data(data):
+    return html.unescape(data).replace("#", "__HASH__")
+
+
+def load_questions_from_web():
+    global questions
+
+    # r = requests.get("https://opentdb.com/api.php?amount=50&type=multiple")
+    r = requests.get(
+        "https://opentdb.com/api.php?amount=50&category=18&type=multiple")
+
+    results = json.loads(r.text)["results"]
+
+    for i, q in enumerate(results):
+        question_id = i + 1
+
+        question = fix_data(q["question"])
+        correct_answer = fix_data(
+            q["correct_answer"])
+
+        incorrect_answers = q["incorrect_answers"]
+        incorrect_answers = list(map(fix_data, incorrect_answers))
+
+        answers = [correct_answer] + incorrect_answers
+
+        random.shuffle(answers)
+
+        questions[str(question_id)] = {
+            "question": question,
+            "answers": answers,
+            "correct": answers.index(correct_answer) + 1
+        }
+
 
 def load_questions():
     """
-    Loads questions bank from file	## FILE SUPPORT TO BE ADDED LATER
+    Loads questions bank from file
     Recieves: -
     Returns: questions dictionary
     """
-    questions = {
-        2313: {"question": "How much is 2+2?", "answers": ["3", "4", "2", "1"], "correct": 2},
-        4122: {"question": "What is the capital of France?", "answers": ["Lion", "Marseille", "Paris", "Montpellier"], "correct": 3}
-    }
-
-    return questions
+    with open(QUESTIONS_FILE, "r") as f:
+        data = f.read()
+        return json.loads(data)
 
 
 def load_user_database():
     """
-    Loads users list from file	## FILE SUPPORT TO BE ADDED LATER
+    Loads users list from file
     Recieves: -
     Returns: user dictionary
     """
-    users = {
-        "test":	{"password": "test", "score": 0, "questions_asked": []},
-        "yossi":	{"password": "123", "score": 50, "questions_asked": []},
-        "master":	{"password": "master", "score": 200, "questions_asked": []}
-    }
-    return users
+    with open(USERS_FILE, "r") as f:
+        data = f.read()
+        return json.loads(data)
 
 
 # SOCKET CREATOR
@@ -99,26 +133,58 @@ def send_error(conn, error_msg):
         conn, chatlib.PROTOCOL_SERVER["error_msg"], error_msg)
 
 
-def create_random_question():
+def create_random_question(username):
     global questions
-    question_id = random.choice([qid for qid in questions.keys()])
-    question = questions[question_id]["question"]
-    answers = questions[question_id]["answers"]
+    global users
+    user_questions = users[username]["questions_asked"]
+    question_ids = [qid for qid in questions.keys()]
 
-    return f"{question_id}#{question}#{'#'.join(answers)}"
+    available_questions = list(filter(
+        lambda x: x not in user_questions, question_ids))
+
+    if len(available_questions) == 0:
+        return None
+
+    random_question_id = random.choice(available_questions)
+
+    users[username]["questions_asked"] = user_questions + [random_question_id]
+
+    question = questions[random_question_id]["question"]
+    answers = questions[random_question_id]["answers"]
+
+    return f"{random_question_id}#{question}#{'#'.join(answers)}"
 
 # MESSAGE HANDLING
 
 
 def handle_question_message(conn):
-    question = create_random_question()
-    build_and_send_message(
-        conn, chatlib.PROTOCOL_SERVER["question_msg"], question)
+    username = logged_users[conn.getpeername()]
+    question = create_random_question(username)
+    if question:
+        global waiting_for_answer
+        waiting_for_answer[username] = question.split("#")[0]
+        build_and_send_message(
+            conn, chatlib.PROTOCOL_SERVER["question_msg"], question)
+    else:
+        build_and_send_message(
+            conn, chatlib.PROTOCOL_SERVER["gameover_msg"], "")
 
 
 def handle_answer_message(conn, username, data):
+    global waiting_for_answer
     question_id, answer = data.split("#")
-    correct = questions[int(question_id)]["correct"]
+
+    if username not in waiting_for_answer:
+        build_and_send_message(
+            conn, chatlib.PROTOCOL_SERVER["error_msg"], "")
+        return
+
+    if question_id not in waiting_for_answer[username]:
+        build_and_send_message(
+            conn, chatlib.PROTOCOL_SERVER["error_msg"], "")
+        return
+
+    correct = questions[question_id]["correct"]
 
     if int(answer) == correct:
         users[username]["score"] += 5
@@ -127,6 +193,8 @@ def handle_answer_message(conn, username, data):
     else:
         build_and_send_message(
             conn, chatlib.PROTOCOL_SERVER["wrong_answer_msg"], str(correct))
+
+    waiting_for_answer[username] = ""
 
 
 def handle_getscore_message(conn, username):
@@ -172,10 +240,15 @@ def handle_login_message(conn, data):
     Recieves: socket, message code and data
     Returns: None (sends answer to client)
     """
-    global users  # This is needed to access the same users dictionary from all functions
-    global logged_users	 # To be used later
+    global users
+    global logged_users
 
     username, password = data.split("#")
+    if username in logged_users:
+        build_and_send_message(
+            conn, chatlib.PROTOCOL_SERVER["error_msg"], "You are already logged in!")
+        return
+
     if username in users:
         if users[username]["password"] == password:
             build_and_send_message(
@@ -193,7 +266,7 @@ def handle_client_message(conn, cmd, data):
     Recieves: socket, message code and data
     Returns: None
     """
-    global logged_users	 # To be used later
+    global logged_users
 
     if cmd == chatlib.PROTOCOL_CLIENT["login_msg"]:
         handle_login_message(conn, data)
@@ -223,7 +296,7 @@ def main():
 
     print("Welcome to Trivia Server!")
     users = load_user_database()
-    questions = load_questions()
+    load_questions_from_web()
 
     s = setup_socket()
 
